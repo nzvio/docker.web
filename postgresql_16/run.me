@@ -1,0 +1,39 @@
+Все образы на всякий случай делаем мультиплатформенными, поскольку хостовая машина может работать и на ARM, и на x86.
+Поэтому билд делается не базовой командой docker build ..., а командой buildx (это такой плагин-строитель).
+
+Перед первым использованием (один раз в системе) создаем строителя, который умеет строить мультиплатформенные образы:
+docker buildx create --name mybuilder --use
+
+Запускаем его перед билдами (он скачает небольшой контейнер-движок):
+docker buildx inspect --bootstrap
+
+Сборка нового образа из Dockerfile:
+docker buildx build --platform linux/amd64,linux/arm64 -t nzvio/postgresql:16 --push .
+
+Обзор списка образов на локальном компе:
+docker images
+
+Пробный запуск в режиме демона (без вывода в текущую консоль) 
+с переменными окружения, пробросом портов и монтированием папки с данными  (не забыть создать папку под данные):
+docker run \
+  -d \
+  -e DB_USER=vio \
+  -e DB_PASSWORD=mypass \
+  -e DB_NAME=mydb \
+  -v "/Users/vio/worker/freelance/_docker/postgresql_16/pg_data:/var/lib/postgresql/16/main" \
+  -p 5432:5432 \
+  nzvio/postgresql:16
+
+В обычном режиме:
+docker run \
+  -e DB_USER=vio \
+  -e DB_PASSWORD=mypass \
+  -e DB_NAME=mydb \
+  -v "/Users/vio/worker/freelance/_docker/postgresql_16/pg_data:/var/lib/postgresql/16/main" \
+  -p 5432:5432 \
+  nzvio/postgresql:16
+
+------------
+
+Под одну платформу сборка с публикацией выглядит так:
+docker build -t nzvio/postgresql:16 --push .
