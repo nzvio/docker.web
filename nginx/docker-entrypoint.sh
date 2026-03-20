@@ -1,24 +1,9 @@
 #!/bin/bash
 
-# Берем первый домен из списка для проверки наличия папки
-FIRST_DOMAIN=$(echo $DOMAINS | awk '{print $1}')
+# Если нужно делать что-то специфичное при старте (например, подменять переменные в конфигах),
+# это делается здесь. Если нет — просто запускаем сервер.
+echo "Starting Nginx as a backend for Traefik."
 
-# Проверяем, есть ли уже сертификат
-if [ ! -d "/etc/letsencrypt/live/$FIRST_DOMAIN" ]; then
-    echo "Certificates not found. Starting certbot for: $DOMAINS"
-    nginx # Запускаем в фоне для проверки
-    
-    CERT_ARGS=""
-    for DOMAIN in $DOMAINS; do
-        CERT_ARGS="$CERT_ARGS -d $DOMAIN"
-    done
-
-    certbot --nginx $CERT_ARGS -m "$EMAIL" --agree-tos --non-interactive --redirect    
-    nginx -s stop
-else
-    echo "Certificates for $FIRST_DOMAIN already exist. Skipping certbot."
-fi
-
-service cron start
-echo "Starting Nginx."
-nginx -g "daemon off;"
+# Запускаем nginx на переднем плане
+# daemon off — чтобы контейнер не завершался сразу после старта сервиса
+exec nginx -g "daemon off;"

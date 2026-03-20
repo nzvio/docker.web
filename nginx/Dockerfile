@@ -9,8 +9,6 @@ RUN apt-get update && apt-get install -y \
     nginx \
     libnginx-mod-http-brotli-filter \
     libnginx-mod-http-brotli-static \
-    certbot \
-    python3-certbot-nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем скрипт запуска (при сборке образа)
@@ -22,7 +20,7 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
 # Порты
-EXPOSE 80 443
+EXPOSE 80
 
 # При старте контейнера выполняется docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]

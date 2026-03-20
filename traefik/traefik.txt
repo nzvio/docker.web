@@ -1,0 +1,65 @@
+Создание контейнера Traefik
+===========================
+
+Создаем общую сеть:
+
+docker network create traefik-public
+
+---------
+
+Структура папок (на примере рабочей папки на MacOS, на линуксе можно положить в папку с проектами основного юзера или, в принципе, куда угодно):
+
+mkdir -p ~/worker/freelance/_traefik/letsencrypt
+touch ~/worker/freelance/_traefik/letsencrypt/acme.json
+chmod 600 ~/worker/freelance/_traefik/letsencrypt/acme.json
+
+---------
+
+Генерируем пароль:
+
+echo $(htpasswd -nB vio) | sed -e 's/\$/\$\$/g'
+
+---------
+
+В папку traefik кладем docker-compose.yml (я тут пока не всё понимаю и не всё проверял):
+
+services:
+    traefik:
+        image: traefik:v3.6
+        container_name: traefik
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        command:
+            #- "--log.level=DEBUG"
+            - "--api.dashboard=true" # Включаем дашборд
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            - "--certificatesresolvers.myresolver.acme.email=viovalya@gmail.com"
+            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./letsencrypt:/letsencrypt
+        networks:
+            - traefik-public
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.dashboard.rule=Host(`traefik.vio.net.ua`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+            - "traefik.http.routers.dashboard.service=api@internal"
+            - "traefik.http.routers.dashboard.entrypoints=websecure"
+            - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+            - "traefik.http.routers.dashboard.middlewares=auth"
+            - "traefik.http.middlewares.auth.basicauth.users=vio:$$2y$$05$$nG1UWCjuqaEdhy.spp/WLO29LbnGjtI1aop3tX90OoQ5Us0eDC/pe"
+networks:
+    traefik-public:
+        external: true
+                        
+---------
+
+Запуск:
+
+docker compose -f docker-compose.yml up -d
