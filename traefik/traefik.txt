@@ -38,6 +38,7 @@ services:
             - "--providers.docker.exposedbydefault=false"
             - "--entrypoints.web.address=:80"
             - "--entrypoints.websecure.address=:443"
+            # Let's Encrypt
             - "--certificatesresolvers.myresolver.acme.email=viovalya@gmail.com"
             - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
             - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
@@ -48,16 +49,19 @@ services:
             - traefik-public
         labels:
             - "traefik.enable=true"
+            # Админка будет висеть на отдельном поддомене
             - "traefik.http.routers.dashboard.rule=Host(`traefik.vio.net.ua`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
             - "traefik.http.routers.dashboard.service=api@internal"
             - "traefik.http.routers.dashboard.entrypoints=websecure"
             - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+            # Подключаем авторизацию
             - "traefik.http.routers.dashboard.middlewares=auth"
+            # Сюда вставляем результат из команды htpasswd (с двойными $$)
             - "traefik.http.middlewares.auth.basicauth.users=vio:$$2y$$05$$nG1UWCjuqaEdhy.spp/WLO29LbnGjtI1aop3tX90OoQ5Us0eDC/pe"
 networks:
     traefik-public:
         external: true
-                        
+                                
 ---------
 
 Запуск:
